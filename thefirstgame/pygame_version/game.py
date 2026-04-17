@@ -51,6 +51,7 @@ class Game:
         self.level = 1
         self.game_over = False
         self.victory = False
+        self.level_complete = False
         self.enemies = []
         self.towers = []
         self.projectiles = []
@@ -82,6 +83,13 @@ class Game:
                 self.volume = data.get('volume', 0.35)
                 audio.set_volume(self.volume)
                 self.max_level_unlocked = data.get('max_level_unlocked', 1)
+                self.level_complete = data.get('level_complete', False)
+                self.towers = []
+                for t_data in data.get('towers', []):
+                    t = Tower(t_data['cx'], t_data['cy'], t_data['type'])
+                    for _ in range(t_data.get('level', 1) - 1):
+                        upgrade_tower(t)
+                    self.towers.append(t)
             else:
                 self.max_level_unlocked = 1
         except Exception:
@@ -98,6 +106,7 @@ class Game:
             'difficulty': self.difficulty,
             'volume': self.volume,
             'max_level_unlocked': max(getattr(self, 'max_level_unlocked', 1), self.level),
+            'towers': [{'cx': t.cx, 'cy': t.cy, 'type': t.type, 'level': t.level} for t in self.towers],
         }
         try:
             with open(self.save_path, 'w', encoding='utf-8') as f:
@@ -128,6 +137,15 @@ class Game:
         cur = self.level
         self.reset_game()
         self.level = cur
+        self.save_game()
+
+    def proceed_to_next_level(self):
+        self.level_complete = False
+        self.wave = 1
+        self.money = 380
+        self.towers.clear()
+        self.selected_tower_index = -1
+        self.generate_level_decorations()
         self.save_game()
 
     def update_ui(self):
@@ -258,12 +276,11 @@ class Game:
                 self.save_game()
                 audio.sfx_victory()
                 return
-            self.wave = 1
-            self.money += 200
-            self.towers.clear()
-            self.selected_tower_index = -1
+            self.level_complete = True
+            self.save_game()
             audio.sfx_level_up()
-        self.save_game()
+        else:
+            self.save_game()
 
     def spawn_logic(self):
         if not self.wave_in_progress:
@@ -789,6 +806,18 @@ class Game:
         self.draw_ui_bar(self.screen)
         self.draw_settings(self.screen)
 
+        if self.level_complete:
+            overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            self.screen.blit(overlay, (0, 0))
+            txt1 = self.big_font.render(f'第 {self.level - 1} 关完成！', True, (0, 255, 128))
+            txt2 = self.small_font.render(f'准备进入第 {self.level} 关', True, (255, 255, 255))
+            txt3 = self.small_font.render(f'初始资金：380 金币', True, (255, 215, 0))
+            self.screen.blit(txt1, txt1.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 - 50)))
+            self.screen.blit(txt2, txt2.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 - 10)))
+            self.screen.blit(txt3, txt3.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 + 20)))
+            self._draw_button(self.screen, '前往下一关', self.screen.get_width()//2 - 80, self.screen.get_height()//2 + 55, 160, 40, (0, 191, 255))
+
         if self.game_over:
             overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
@@ -824,6 +853,13 @@ class Game:
             return
         if self.app_state == 'level_select':
             self.handle_level_select_click(mx, my)
+            return
+
+        if self.level_complete:
+            btn_x = self.screen.get_width() // 2 - 80
+            btn_y = self.screen.get_height() // 2 + 55
+            if btn_x <= mx <= btn_x + 160 and btn_y <= my <= btn_y + 40:
+                self.proceed_to_next_level()
             return
 
         # 左上角齿轮设置图标
@@ -909,7 +945,7 @@ class Game:
                     return
 
     def handle_settings_click(self, mx, my):
-        mw, mh = 400, 320
+        mw, mh = 400, 360
         sx = (self.screen.get_width() - mw) // 2
         sy = (self.screen.get_height() - mh) // 2
         if sx + 20 <= mx <= sx + 380 and sy + 230 <= my <= sy + 268:

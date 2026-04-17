@@ -38,7 +38,7 @@ TOWER_DEFS = {
 DIFFICULTY = {
     'easy':   {'hp_mul':0.75, 'speed_mul':0.85, 'max_towers':999, 'label':'简单', 'desc':'简单难度：敌人血量-25%，速度-15%，塔位无限制'},
     'normal': {'hp_mul':1.0,  'speed_mul':1.0,  'max_towers':22,  'label':'普通', 'desc':'普通难度：标准敌人，最多建造22座塔'},
-    'hard':   {'hp_mul':1.45, 'speed_mul':1.25, 'max_towers':14,  'label':'困难', 'desc':'困难难度：敌人血量+45%，速度+25%，最多建造14座塔'},
+    'hard':   {'hp_mul':1.75, 'speed_mul':1.4, 'max_towers':12,  'label':'困难', 'desc':'困难难度：敌人血量+75%，速度+40%，最多建造12座塔'},
 }
 
 _CJK_FONT_PATH = None
