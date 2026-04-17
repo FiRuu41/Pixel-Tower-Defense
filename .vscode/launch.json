@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🐍 运行 Pygame 版",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/thefirstgame/pygame_version/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/thefirstgame/pygame_version",
+            "justMyCode": true
+        },
+        {
+            "name": "🐍 运行 Pygame 版 (debugpy)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/thefirstgame/pygame_version/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/thefirstgame/pygame_version",
+            "justMyCode": true
+        },
+        {
+            "name": "▶️ 启动 HTML 版 (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "file": "${workspaceFolder}/thefirstgame/index.html",
+            "webRoot": "${workspaceFolder}/thefirstgame"
+        },
+        {
+            "name": "▶️ 启动 HTML 版 (Edge)",
+            "type": "msedge",
+            "request": "launch",
+            "file": "${workspaceFolder}/thefirstgame/index.html",
+            "webRoot": "${workspaceFolder}/thefirstgame"
+        }
+    ]
+}
