@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>像素塔防 · 策略版</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-wrapper">
+    <canvas id="game" width="640" height="480"></canvas>
+
+    <div id="ui">
+      <div class="stat">❤️ 生命: <span id="lives">25</span></div>
+      <div class="stat">🪙 金币: <span id="money">180</span></div>
+      <div class="stat">🌊 波次: <span id="wave">1</span>/20</div>
+      <div class="stat">🏰 关卡: <span id="level">1</span>/10</div>
+      <div class="stat" id="tower-limit-stat">🏗️ 塔位: <span id="tower-count">0</span>/<span id="tower-max">∞</span></div>
+      <button id="start-wave">开始下一波</button>
+      <button id="reset">重置游戏</button>
+      <button id="settings-btn" title="设置">⚙️</button>
+    </div>
+
+    <div id="tower-bar">
+      <div class="tower-card selected" data-type="basic">
+        <div class="preview basic"></div>
+        <div class="name">机枪塔</div>
+        <div class="price">50🪙</div>
+        <div class="desc">攻速快，伤害中等</div>
+      </div>
+      <div class="tower-card" data-type="sniper">
+        <div class="preview sniper"></div>
+        <div class="name">狙击塔</div>
+        <div class="price">80🪙</div>
+        <div class="desc">超远射程，高伤害</div>
+      </div>
+      <div class="tower-card" data-type="slow">
+        <div class="preview slow"></div>
+        <div class="name">冰霜塔</div>
+        <div class="price">70🪙</div>
+        <div class="desc">减速敌人，低伤害</div>
+      </div>
+      <div class="tower-card" data-type="splash">
+        <div class="preview splash"></div>
+        <div class="name">爆破塔</div>
+        <div class="price">120🪙</div>
+        <div class="desc">范围爆炸，群攻利器</div>
+      </div>
+    </div>
+
+    <div id="tooltip">
+      <p>选择塔后点击绿色草地建造 · 点击塔显示范围和操作按钮</p>
+      <p>每5波出现BOSS，不同关卡地图不同，高难度塔位更少</p>
+    </div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div id="settings-modal" class="hidden">
+    <div class="modal-content">
+      <h2>⚙️ 游戏设置</h2>
+      <div class="setting-row">
+        <label>音乐音量</label>
+        <input type="range" id="volume-slider" min="0" max="100" value="35">
+        <span id="volume-value">35%</span>
+      </div>
+      <div class="setting-row">
+        <label>游戏难度</label>
+        <div class="difficulty-options">
+          <button class="diff-btn" data-diff="easy">简单</button>
+          <button class="diff-btn selected" data-diff="normal">普通</button>
+          <button class="diff-btn" data-diff="hard">困难</button>
+        </div>
+      </div>
+      <div class="setting-tip" id="diff-desc">普通难度：敌人血量与速度为标准值，塔位无限制</div>
+      <button id="close-settings" class="close-btn">关闭</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
