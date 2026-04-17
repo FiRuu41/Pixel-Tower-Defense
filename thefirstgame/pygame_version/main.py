@@ -16,4 +16,4 @@ if __name__ == '__main__':
         print('TEST_PASS')
         pygame.quit()
     else:
-        game.run()22222
+        game.run()
