@@ -28,8 +28,14 @@ class Game:
 
         self.running = True
         self.show_settings = False
+        self.show_help = False
         self.difficulty = 'normal'
         self.volume = 0.35
+        self.god_mode = False
+        self.god_infinite_money = False
+        self.god_infinite_lives = False
+        self.help_title_clicks = 0
+        self.god_notify_timer = 0
         audio.init()
         audio.set_volume(self.volume)
 
@@ -116,7 +122,10 @@ class Game:
 
     def refresh_menu_items(self):
         first = '继续游戏' if self.has_save else '开始游戏'
-        self.menu_items = [first, '关卡选择', '设置']
+        items = [first, '关卡选择', '设置']
+        if self.god_mode:
+            items.append('退出上帝模式')
+        self.menu_items = items
 
     def start_new_game(self):
         self.reset_game()
@@ -298,6 +307,10 @@ class Game:
     def update(self):
         if self.game_over or self.victory:
             return
+        if self.god_mode and self.god_infinite_money:
+            self.money = 999999
+        if self.god_mode and self.god_infinite_lives:
+            self.lives = 999
         self.spawn_logic()
         for e in self.enemies:
             e.update(self)
@@ -596,6 +609,21 @@ class Game:
             s.fill((20, 20, 20))
             surf.blit(s, (x, y))
 
+    def _draw_toggle(self, surf, text, x, y, enabled):
+        txt = self.small_font.render(text, True, (200, 200, 200))
+        surf.blit(txt, (x, y + 8))
+        tw = txt.get_width()
+        bx = x + tw + 12
+        by = y + 6
+        pygame.draw.rect(surf, (100, 100, 100), (bx, by, 44, 22), border_radius=11)
+        if enabled:
+            pygame.draw.rect(surf, (0, 255, 128), (bx + 22, by, 22, 22), border_radius=11)
+            pygame.draw.circle(surf, (255, 255, 255), (bx + 33, by + 11), 8)
+        else:
+            pygame.draw.rect(surf, (80, 80, 80), (bx, by, 22, 22), border_radius=11)
+            pygame.draw.circle(surf, (180, 180, 180), (bx + 11, by + 11), 8)
+        return pygame.Rect(bx, by, 44, 22)
+
     def draw_settings(self, surf):
         if not self.show_settings:
             return
@@ -603,7 +631,7 @@ class Game:
         overlay.fill((0, 0, 0, 180))
         surf.blit(overlay, (0, 0))
 
-        mw, mh = 400, 360
+        mw, mh = (400, 480) if self.god_mode else (400, 360)
         mx = (self.screen.get_width() - mw) // 2
         my = (self.screen.get_height() - mh) // 2
         pygame.draw.rect(surf, (22, 33, 62), (mx, my, mw, mh))
@@ -641,16 +669,88 @@ class Game:
         txt = self.tiny_font.render(desc, True, (136, 192, 208))
         surf.blit(txt, (mx + 20, my + 200))
 
+        btn_y = my + 230
+        if self.god_mode:
+            # 上帝模式选项
+            lbl = self.small_font.render('上帝模式选项', True, (255, 0, 0))
+            surf.blit(lbl, (mx + 20, my + 230))
+            self._draw_toggle(surf, '无限金币', mx + 20, my + 260, self.god_infinite_money)
+            self._draw_toggle(surf, '无限生命', mx + 20, my + 300, self.god_infinite_lives)
+            btn_y = my + 350
+
         # back to menu button
-        self._draw_button(surf, '回到主菜单', mx + 20, my + 230, 360, 38, (233, 69, 96))
+        self._draw_button(surf, '回到主菜单', mx + 20, btn_y, 360, 38, (233, 69, 96))
         # reset level button
-        self._draw_button(surf, '重置本关', mx + 20, my + 272, 360, 38, (233, 69, 96))
+        self._draw_button(surf, '重置本关', mx + 20, btn_y + 42, 360, 38, (233, 69, 96))
         # close button
-        self._draw_button(surf, '关闭', mx + 20, my + 314, 360, 38, (54, 106, 181))
+        self._draw_button(surf, '关闭', mx + 20, btn_y + 84, 360, 38, (54, 106, 181))
+
+    def _draw_menu_help_icon(self, mx, my):
+        # 右上角不起眼的灰色小圆 + 感叹号
+        cx = self.screen.get_width() - 28
+        cy = 28
+        r = 12
+        color = (100, 100, 100) if (mx - cx) ** 2 + (my - cy) ** 2 <= r * r else (70, 70, 70)
+        pygame.draw.circle(self.screen, color, (cx, cy), r)
+        pygame.draw.circle(self.screen, (50, 50, 50), (cx, cy), r, 2)
+        txt = self.small_font.render('!', True, (40, 40, 40))
+        rect = txt.get_rect(center=(cx, cy))
+        self.screen.blit(txt, rect)
+        return (cx - r, cy - r, r * 2, r * 2)
+
+    def draw_help(self):
+        if not self.show_help:
+            return
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+
+        mw, mh = 520, 480
+        mx = (self.screen.get_width() - mw) // 2
+        my = (self.screen.get_height() - mh) // 2
+        pygame.draw.rect(self.screen, (22, 33, 62), (mx, my, mw, mh))
+        pygame.draw.rect(self.screen, (15, 52, 96), (mx, my, mw, mh), 3)
+
+        title = self.big_font.render('游戏帮助', True, (255, 215, 0))
+        self.screen.blit(title, (mx + 20, my + 15))
+
+        lines = [
+            ('玩法概述', (0, 191, 255)),
+            ('', (255, 255, 255)),
+            ('1. 从底部卡片选择防御塔，点击绿色草地建造。', (200, 200, 200)),
+            ('2. 点击已放置的塔，可查看攻击范围并进行操作。', (200, 200, 200)),
+            ('3. 点击左上角齿轮可调整难度和音量。', (200, 200, 200)),
+            ('', (255, 255, 255)),
+            ('防御塔说明', (0, 191, 255)),
+            ('', (255, 255, 255)),
+            ('机枪塔 - 攻速快，伤害中等，性价比之选', (233, 69, 96)),
+            ('狙击塔 - 超远射程，高伤害，优先攻击血最多敌人', (0, 191, 255)),
+            ('冰霜塔 - 减速敌人，配合其他塔效果极佳', (0, 255, 255)),
+            ('爆破塔 - 范围爆炸伤害，群攻利器', (255, 140, 0)),
+            ('', (255, 255, 255)),
+            ('进阶技巧', (0, 191, 255)),
+            ('', (255, 255, 255)),
+            ('· 升级塔可大幅提升伤害、射程和射速', (170, 170, 170)),
+            ('· 拆除塔返还 50% 金币', (170, 170, 170)),
+            ('· 每 5 波出现 BOSS，血量极高，请提前布置狙击/爆破塔', (170, 170, 170)),
+            ('· 困难难度敌人更强且塔位受限，考验你的布局策略', (170, 170, 170)),
+        ]
+        y = my + 70
+        for text, color in lines:
+            if text:
+                txt = self.small_font.render(text, True, color)
+                self.screen.blit(txt, (mx + 24, y))
+            y += 18
+
+        self._draw_button(self.screen, '关闭', mx + 160, my + 430, 200, 38, (54, 106, 181))
 
     def draw_menu(self):
         self.screen.fill((26, 26, 46))
         cx = self.screen.get_width() // 2
+
+        # 右上角帮助图标（不起眼）
+        mx, my = pygame.mouse.get_pos()
+        self._draw_menu_help_icon(mx, my)
 
         # 立体像素标题
         title_y = 55
@@ -697,7 +797,20 @@ class Game:
         for p in self.menu_particles:
             pygame.draw.rect(self.screen, p['color'], (int(p['x']), int(p['y']), p['size'], p['size']))
 
+        # 上帝模式激活提示（放在最上层，覆盖菜单）
+        if self.god_notify_timer > 0:
+            self.god_notify_timer -= 1
+            alpha = min(220, self.god_notify_timer * 3)
+            overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, alpha))
+            self.screen.blit(overlay, (0, 0))
+            txt = self.big_font.render('上帝模式已开启！', True, (255, 0, 0))
+            self.screen.blit(txt, txt.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 - 40)))
+            txt2 = self.small_font.render('所有关卡已解锁 · 设置中可开启无限金币/生命', True, (255, 255, 255))
+            self.screen.blit(txt2, txt2.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 + 10)))
+
         self.draw_settings(self.screen)
+        self.draw_help()
         pygame.display.flip()
 
     def _draw_lock_icon(self, surf, cx, cy, color):
@@ -742,7 +855,7 @@ class Game:
             row = (lv - 1) // cols
             x = start_x + col * (card_w + gap_x)
             y = start_y + row * (card_h + gap_y)
-            unlocked = lv <= getattr(self, 'max_level_unlocked', 1)
+            unlocked = lv <= getattr(self, 'max_level_unlocked', 1) or self.god_mode
             rect = pygame.Rect(x, y, card_w, card_h)
             hovered = unlocked and rect.collidepoint(mx, my)
             if hovered:
@@ -848,6 +961,26 @@ class Game:
             self.handle_settings_click(mx, my)
             return
 
+        if self.show_help:
+            mw, mh = 520, 480
+            sx = (self.screen.get_width() - mw) // 2
+            sy = (self.screen.get_height() - mh) // 2
+            # 检测"游戏帮助"标题连续点击（进入上帝模式的隐藏入口）
+            title_rect = pygame.Rect(sx + 20, sy + 15, 200, 60)
+            if title_rect.collidepoint(mx, my):
+                self.help_title_clicks += 1
+                if self.help_title_clicks >= 5:
+                    if not self.god_mode:
+                        self.god_mode = True
+                        self.god_notify_timer = 180
+                        self.refresh_menu_items()
+                    self.help_title_clicks = 0
+            # 关闭按钮
+            if sx + 160 <= mx <= sx + 360 and sy + 430 <= my <= sy + 468:
+                self.show_help = False
+                self.help_title_clicks = 0
+            return
+
         if self.app_state == 'menu':
             self.handle_menu_click(mx, my)
             return
@@ -945,18 +1078,31 @@ class Game:
                     return
 
     def handle_settings_click(self, mx, my):
-        mw, mh = 400, 360
+        mw, mh = (400, 480) if self.god_mode else (400, 360)
         sx = (self.screen.get_width() - mw) // 2
         sy = (self.screen.get_height() - mh) // 2
-        if sx + 20 <= mx <= sx + 380 and sy + 230 <= my <= sy + 268:
+        btn_y = sy + 230
+        if self.god_mode:
+            # 无限金币开关
+            toggle_rect = pygame.Rect(sx + 20 + self.small_font.size('无限金币')[0] + 32, sy + 260 + 6, 44, 22)
+            if toggle_rect.collidepoint(mx, my):
+                self.god_infinite_money = not self.god_infinite_money
+                return
+            # 无限生命开关
+            toggle_rect = pygame.Rect(sx + 20 + self.small_font.size('无限生命')[0] + 32, sy + 300 + 6, 44, 22)
+            if toggle_rect.collidepoint(mx, my):
+                self.god_infinite_lives = not self.god_infinite_lives
+                return
+            btn_y = sy + 350
+        if sx + 20 <= mx <= sx + 380 and btn_y <= my <= btn_y + 38:
             self.app_state = 'menu'
             self.show_settings = False
             return
-        if sx + 20 <= mx <= sx + 380 and sy + 272 <= my <= sy + 310:
+        if sx + 20 <= mx <= sx + 380 and btn_y + 42 <= my <= btn_y + 80:
             self.reset_current_level()
             self.show_settings = False
             return
-        if sx + 20 <= mx <= sx + 380 and sy + 314 <= my <= sy + 352:
+        if sx + 20 <= mx <= sx + 380 and btn_y + 84 <= my <= btn_y + 122:
             self.show_settings = False
             return
         if sy + 95 <= my <= sy + 105 and sx + 20 <= mx <= sx + 280:
@@ -973,6 +1119,13 @@ class Game:
                 return
 
     def handle_menu_click(self, mx, my):
+        # 检测帮助图标点击（右上角灰色小圆）
+        icon_cx = self.screen.get_width() - 28
+        icon_cy = 28
+        if (mx - icon_cx) ** 2 + (my - icon_cy) ** 2 <= 12 * 12:
+            self.show_help = True
+            return
+
         cx = self.screen.get_width() // 2
         start_y = 265
         item_h = 56
@@ -992,6 +1145,11 @@ class Game:
                     self.app_state = 'level_select'
                 elif i == 2:
                     self.show_settings = True
+                elif i == 3 and self.god_mode:
+                    self.god_mode = False
+                    self.god_infinite_money = False
+                    self.god_infinite_lives = False
+                    self.refresh_menu_items()
                 return
 
     def handle_level_select_click(self, mx, my):
@@ -1013,7 +1171,7 @@ class Game:
             row = (lv - 1) // cols
             x = start_x + col * (card_w + gap_x)
             y = start_y + row * (card_h + gap_y)
-            unlocked = lv <= getattr(self, 'max_level_unlocked', 1)
+            unlocked = lv <= getattr(self, 'max_level_unlocked', 1) or self.god_mode
             rect = pygame.Rect(x, y, card_w, card_h)
             if unlocked and rect.collidepoint(mx, my):
                 self.start_level(lv)
