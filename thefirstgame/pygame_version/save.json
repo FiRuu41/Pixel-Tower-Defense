@@ -1,11 +1,30 @@
 {
   "has_save": true,
   "level": 1,
-  "wave": 1,
-  "money": 180,
+  "wave": 2,
+  "money": 78,
   "lives": 25,
   "difficulty": "hard",
   "volume": 0.08461538461538462,
   "max_level_unlocked": 6,
-  "towers": []
+  "towers": [
+    {
+      "cx": 176,
+      "cy": 208,
+      "type": "basic",
+      "level": 2
+    },
+    {
+      "cx": 208,
+      "cy": 208,
+      "type": "basic",
+      "level": 1
+    },
+    {
+      "cx": 240,
+      "cy": 208,
+      "type": "basic",
+      "level": 1
+    }
+  ]
 }

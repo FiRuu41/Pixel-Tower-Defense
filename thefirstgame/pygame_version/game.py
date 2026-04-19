@@ -497,16 +497,16 @@ class Game:
         surf.blit(gold_txt, (coin_x + 32, coin_y + 2))
 
         # 塔卡片
-        card_y = btn_y + 46
+        card_y = btn_y + 48
         cards = ['basic', 'sniper', 'slow', 'splash']
         for i, ctype in enumerate(cards):
             selected = (self.selected_tower_type == ctype)
             can_afford = self.money >= TOWER_DEFS[ctype]['price']
-            self._draw_tower_card(surf, ctype, 20 + i * 120, card_y, selected, can_afford)
+            self._draw_tower_card(surf, ctype, 20 + i * 148, card_y, selected, can_afford)
 
         # 提示
         hint = self.small_font.render('点击草地建造 · 点击塔升级/拆除 · 河流/花/树不可建塔', True, (170, 170, 170))
-        surf.blit(hint, (20, card_y + 80))
+        surf.blit(hint, (20, card_y + 115))
 
     def _draw_pixel_heart(self, surf, cx, cy, color):
         pattern = [
@@ -585,29 +585,126 @@ class Game:
         rect = txt.get_rect(center=(x + w // 2, y + h // 2))
         surf.blit(txt, rect)
 
+    def _draw_mini_tower(self, surf, cx, cy, ttype):
+        """在卡片上绘制精致的小塔预览图标"""
+        # 基座（梯形感）
+        pygame.draw.rect(surf, (75, 75, 75), (cx - 14, cy + 6, 28, 8))
+        pygame.draw.rect(surf, (100, 100, 100), (cx - 10, cy + 2, 20, 6))
+        # 塔身主体
+        pygame.draw.rect(surf, (130, 130, 130), (cx - 8, cy - 8, 16, 12))
+        pygame.draw.rect(surf, (160, 160, 160), (cx - 6, cy - 6, 12, 8))
+
+        color = TOWER_DEFS[ttype]['color']
+
+        if ttype == 'basic':
+            # 机枪：粗短红色炮管 + 枪口罩
+            pygame.draw.rect(surf, color, (cx - 2, cy - 4, 18, 8))
+            pygame.draw.rect(surf, (200, 50, 80), (cx + 10, cy - 5, 6, 10))
+            # 子弹特效小点
+            pygame.draw.circle(surf, (255, 200, 100), (cx + 18, cy), 2)
+        elif ttype == 'sniper':
+            # 狙击：细长蓝色炮管
+            pygame.draw.rect(surf, color, (cx - 2, cy - 3, 22, 6))
+            pygame.draw.rect(surf, (0, 140, 200), (cx + 16, cy - 4, 8, 8))
+            # 瞄准镜
+            pygame.draw.rect(surf, (60, 60, 80), (cx + 2, cy - 7, 4, 3))
+        elif ttype == 'slow':
+            # 冰霜：青色炮管 + 冰晶球
+            pygame.draw.rect(surf, color, (cx - 2, cy - 3, 14, 6))
+            pygame.draw.circle(surf, (0, 230, 230), (cx + 14, cy), 5)
+            pygame.draw.circle(surf, (200, 255, 255), (cx + 14, cy), 3)
+            # 雪花小点
+            pygame.draw.rect(surf, (200, 255, 255), (cx + 18, cy - 4, 2, 2))
+            pygame.draw.rect(surf, (200, 255, 255), (cx + 20, cy + 2, 2, 2))
+        elif ttype == 'splash':
+            # 爆破：橙色炮管 + 膨大前端
+            pygame.draw.rect(surf, color, (cx - 2, cy - 3, 14, 6))
+            pygame.draw.rect(surf, (220, 100, 0), (cx + 10, cy - 5, 8, 10))
+            # 火花小点
+            pygame.draw.circle(surf, (255, 200, 50), (cx + 18, cy - 3), 2)
+            pygame.draw.circle(surf, (255, 100, 50), (cx + 16, cy + 3), 2)
+
     def _draw_tower_card(self, surf, ttype, x, y, selected, can_afford=True):
-        w, h = 110, 70
-        color = (26, 74, 122) if selected else (15, 52, 96)
-        border = (255, 215, 0) if selected else (54, 106, 181)
-        pygame.draw.rect(surf, color, (x, y, w, h))
-        pygame.draw.rect(surf, border, (x, y, w, h), 2)
+        w, h = 138, 108
         d = TOWER_DEFS[ttype]
-        lines = [d['name'], f'{d["price"]}金币']
-        for idx, line in enumerate(lines):
-            if idx == 1 and not can_afford:
-                txt_color = (255, 80, 80)
-            else:
-                txt_color = (255, 215, 0) if idx == 1 else (224, 224, 224)
-            txt = self.small_font.render(line, True, txt_color)
-            surf.blit(txt, (x + 8, y + 6 + idx * 16))
+
+        # 颜色配置
+        color = (28, 82, 138) if selected else (18, 48, 88)
+        border = (255, 215, 0) if selected else (60, 120, 180)
+        if not can_afford and not selected:
+            border = (160, 60, 60)
+
+        # 底部阴影（增加深度感）
+        pygame.draw.rect(surf, (5, 15, 30), (x + 3, y + 3, w, h), border_radius=4)
+
+        # 卡片背景
+        pygame.draw.rect(surf, color, (x, y, w, h), border_radius=4)
+
+        # 顶部高光条
+        pygame.draw.rect(surf, (48, 120, 180) if selected else (30, 70, 120), (x + 1, y + 1, w - 2, 4), border_radius=2)
+
+        # 边框
+        pygame.draw.rect(surf, border, (x, y, w, h), 2, border_radius=4)
+
+        # 选中时内发光效果
+        if selected:
+            glow = pygame.Surface((w, h), pygame.SRCALPHA)
+            pygame.draw.rect(glow, (255, 215, 0, 30), (0, 0, w, h), border_radius=4)
+            surf.blit(glow, (x, y))
+
+        # === 左侧：塔像素预览 ===
+        preview_cx = x + 36
+        preview_cy = y + 58
+        # 预览区域背景圆（让塔更突出）
+        pygame.draw.circle(surf, (10, 30, 60), (preview_cx, preview_cy), 26)
+        pygame.draw.circle(surf, (40, 90, 150) if selected else (30, 70, 120), (preview_cx, preview_cy), 26, 2)
+        # 画塔
+        self._draw_mini_tower(surf, preview_cx, preview_cy, ttype)
+
+        # === 右侧上部：塔名称 ===
+        txt_name = self.small_font.render(d['name'], True, (255, 255, 255))
+        surf.blit(txt_name, (x + 68, y + 8))
+
+        # 右上角类型色块
+        tag_color = d['color']
+        pygame.draw.rect(surf, tag_color, (x + w - 16, y + 6, 10, 10), border_radius=2)
+
+        # === 价格 ===
+        price_color = (255, 215, 0) if can_afford else (255, 100, 100)
+        # 小金币
+        coin_cx = x + 76
+        coin_cy = y + 32
+        for dy in range(-3, 4):
+            for dx in range(-3, 4):
+                if dx*dx + dy*dy <= 8:
+                    pygame.draw.rect(surf, (255, 215, 0), (coin_cx + dx, coin_cy + dy, 1, 1))
+        pygame.draw.rect(surf, (180, 140, 0), (coin_cx, coin_cy - 2, 1, 5))
+        txt_price = self.small_font.render(str(d['price']), True, price_color)
+        surf.blit(txt_price, (x + 86, y + 26))
+
+        # === 属性标签 ===
+        # 射程
+        range_txt = self.tiny_font.render(f"射:{d['range']}", True, (180, 220, 255))
+        surf.blit(range_txt, (x + 68, y + 48))
+        # 伤害
+        dmg_txt = self.tiny_font.render(f"伤:{d['damage']}", True, (255, 180, 180))
+        surf.blit(dmg_txt, (x + 68, y + 64))
+
+        # === 底部描述 ===
         desc = {'basic':'攻速快，伤害中等','sniper':'超远射程，高伤害','slow':'减速敌人，低伤害','splash':'范围爆炸，群攻利器'}[ttype]
         txt = self.tiny_font.render(desc, True, (170, 170, 170))
-        surf.blit(txt, (x + 8, y + 44))
+        surf.blit(txt, (x + 8, y + h - 18))
+
+        # === 买不起遮罩 ===
         if not can_afford:
-            s = pygame.Surface((w, h))
-            s.set_alpha(100)
-            s.fill((20, 20, 20))
+            s = pygame.Surface((w, h), pygame.SRCALPHA)
+            s.fill((20, 20, 30, 140))
             surf.blit(s, (x, y))
+            # 红色对角线
+            pygame.draw.line(surf, (180, 60, 60), (x + 5, y + 5), (x + w - 5, y + h - 5), 2)
+            pygame.draw.line(surf, (180, 60, 60), (x + w - 5, y + 5), (x + 5, y + h - 5), 2)
+            # 底部红条
+            pygame.draw.rect(surf, (200, 60, 60), (x, y + h - 5, w, 5))
 
     def _draw_toggle(self, surf, text, x, y, enabled):
         txt = self.small_font.render(text, True, (200, 200, 200))
@@ -1067,11 +1164,11 @@ class Game:
                 return
 
         # tower cards
-        card_y = y_base + 46
-        if card_y <= my <= card_y + 70:
+        card_y = y_base + 48
+        if card_y <= my <= card_y + 108:
             for i in range(4):
-                x = 20 + i * 120
-                if x <= mx <= x + 110:
+                x = 20 + i * 148
+                if x <= mx <= x + 138:
                     types = ['basic', 'sniper', 'slow', 'splash']
                     self.selected_tower_type = types[i]
                     self.selected_tower_index = -1
