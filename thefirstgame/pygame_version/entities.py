@@ -209,6 +209,26 @@ class Tower:
                 if d <= self.range and e.hp > best_hp:
                     best_hp = e.hp
                     target = e
+        elif self.type == 'slow':
+            # 冰霜塔：优先攻击范围内未被减速的敌人，避免重复上冻
+            best_d = float('inf')
+            for e in game.enemies:
+                if e.dead or e.reached:
+                    continue
+                d = dist((self.cx, self.cy), (e.x, e.y))
+                if d <= self.range and d < best_d and e.slow_timer <= 0:
+                    best_d = d
+                    target = e
+            # 若全都已被减速，fallback 到最近敌人
+            if target is None:
+                best_d = float('inf')
+                for e in game.enemies:
+                    if e.dead or e.reached:
+                        continue
+                    d = dist((self.cx, self.cy), (e.x, e.y))
+                    if d <= self.range and d < best_d:
+                        best_d = d
+                        target = e
         else:
             best_d = float('inf')
             for e in game.enemies:
