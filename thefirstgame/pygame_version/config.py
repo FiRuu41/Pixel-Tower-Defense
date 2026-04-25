@@ -55,7 +55,10 @@ def _find_cjk_font():
         'dengxian', 'fangsong', 'kaiti',
     ]
     for name in candidates:
-        path = pygame.font.match_font(name)
+        try:
+            path = pygame.font.match_font(name)
+        except TypeError:
+            path = None
         if path and os.path.isfile(path):
             _CJK_FONT_PATH = path
             return path
@@ -75,16 +78,19 @@ def _find_cjk_font():
             return path
     try:
         all_fonts = pygame.font.get_fonts()
-        keywords = ['simhei', 'simsun', 'msyh', 'microsoftyahei', 'dengxian', 'wenquanyi', 'notosanscjk']
-        for font_name in all_fonts:
-            lower = font_name.lower()
-            if any(k in lower for k in keywords):
+    except TypeError:
+        all_fonts = []
+    keywords = ['simhei', 'simsun', 'msyh', 'microsoftyahei', 'dengxian', 'wenquanyi', 'notosanscjk']
+    for font_name in all_fonts:
+        lower = font_name.lower()
+        if any(k in lower for k in keywords):
+            try:
                 path = pygame.font.match_font(font_name)
-                if path and os.path.isfile(path):
-                    _CJK_FONT_PATH = path
-                    return path
-    except Exception:
-        pass
+            except TypeError:
+                path = None
+            if path and os.path.isfile(path):
+                _CJK_FONT_PATH = path
+                return path
     _CJK_FONT_PATH = ''
     return ''
 

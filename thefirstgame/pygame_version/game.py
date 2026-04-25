@@ -25,6 +25,7 @@ class Game:
         self.tiny_font = get_font(12)
         self.pixel_text = PixelText()
         self.menu_particles = []
+        self._card_glow = None
 
         self.running = True
         self.show_settings = False
@@ -648,9 +649,10 @@ class Game:
 
         # 选中时内发光效果
         if selected:
-            glow = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.rect(glow, (255, 215, 0, 30), (0, 0, w, h), border_radius=4)
-            surf.blit(glow, (x, y))
+            if self._card_glow is None:
+                self._card_glow = pygame.Surface((w, h), pygame.SRCALPHA)
+                pygame.draw.rect(self._card_glow, (255, 215, 0, 30), (0, 0, w, h), border_radius=4)
+            surf.blit(self._card_glow, (x, y))
 
         # === 左侧：塔像素预览 ===
         preview_cx = x + 36
